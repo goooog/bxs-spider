@@ -9,19 +9,18 @@ import copy
 
 class FeeCrawler(object):
 
-	def __init__(self,common_data,ins_data):
-		super.__init__(self)
-		self.common_data=copy.deepcopy(common_data)
+	def __init__(self,ins_data):
 		self.ins_data=copy.deepcopy(ins_data)
+		print self.ins_data
 
 	def run(self):
 		page_id=self.submit_planbook()
 		page_content=self.get_planbook_page(page_id)
+		print page_content
 		self.parse_page(page_content)
 	
 	def generate_params(self):
 		params=self.ins_data
-		params['commonData']=self.common_data
 		params['insureList']=[]
 		if not params.has_key('allMainInsData'):
 			return params
@@ -33,7 +32,10 @@ class FeeCrawler(object):
 			baoType=ins_data['baoType']
 
 			for (code,ins) in ins_data.items():
-				if(ins.has_key('baoe') and ins.has_key('baof')):
+				if not isinstance(ins,dict):
+					continue
+
+				if ins.has_key('baoe') and ins.has_key('baof'):
 					ins['code']=code
 					ins['type']=ins_type
 					ins['baoType']=baoType
@@ -43,21 +45,22 @@ class FeeCrawler(object):
 			
 	def submit_planbook(self):
 		pb_input=self.generate_params()
-		payload=dict(combinePBInput=json.dumps(pb_input))
+		payload=dict(combinePBInput=json.dumps(pb_input,ensure_ascii=False))
 		r=requests.post(CREAT_PB_URL,data=payload,cookies=COOKIES,verify=False)
 		return r.json()['data']
 	
 	def get_planbook_page(self,page_id):
 		if not page_id:
 			return
-		r=requests.get(CREAT_PB_URL+page_id,cookies=COOKIES)
+		r=requests.get(PB_PAGE_URL+page_id,cookies=COOKIES,verify=False)
 		if is_http_ok(r):
-			return r.content;
+			return r.text
 
 	
 	def parse_page(self,page_content):
 		if not page_content:
 			return
+		print page_content
 	
 
 		

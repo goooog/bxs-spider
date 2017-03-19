@@ -6,6 +6,8 @@ import json
 import time
 import codecs
 from settings import *
+from tools import *
+from fee_crawler import FeeCrawler
 
 def write_file(text):
 	with codecs.open('./data.txt','a','utf-8') as f:
@@ -42,18 +44,28 @@ def parse_response(response):
 	return '{0:<4}\t{1:<15}\t{2}'.format(ins_id,ins_name,','.join(ins_props))
 	
 	
+def loop_fetch_ins():
+	for id in range(460,5000):
+		try:
+			r=fetch_pb(id)
+			data=parse_response(r)
+			if data:
+				print data
+				write_file(data)
+		except BaseException, e:
+		   print e
+		finally:
+		   time.sleep(1)
 
-for id in range(460,5000):
-	try:
-		r=fetch_pb(id)
-		data=parse_response(r)
-		if data:
-			print data
-			write_file(data)
-	except BaseException, e:
-	   print e
-	finally:
-	   time.sleep(1)
-
+if __name__ == '__main__':
+	r=fetch_pb(634)
+	r.encoding='utf-8'
+	data=r.json()['data']
+	if data.has_key('groupDefData'):
+		ins_data=data['groupDefData']	
+		fee_crawler=FeeCrawler(ins_data)
+		fee_crawler.run()
+	else:
+		print 'groupDefData not found'
 
 

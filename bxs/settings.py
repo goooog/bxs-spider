@@ -26,7 +26,7 @@ HOST='https://app.winbaoxian.com'
 
 GET_PB_URL=HOST+'/planBook/combinePB/getAvailablePB'
 CREAT_PB_URL=HOST+'/planBook/CombinePlanBookOutput/ajaxGet'
-PB_RESULT_URL=HOST+'/planBook/planBookResult?nw=1&isCombine=1&id=%s'
+PB_PAGE_URL=HOST+'/planBook/planBookResult?nw=1&isCombine=1&id='
 
 
 COMMON_DATA={
