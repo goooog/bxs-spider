@@ -6,6 +6,7 @@ from tools import *
 import json
 import requests
 import copy
+from bs4 import BeautifulSoup
 
 class FeeCrawler(object):
 
@@ -16,8 +17,8 @@ class FeeCrawler(object):
 	def run(self):
 		page_id=self.submit_planbook()
 		page_content=self.get_planbook_page(page_id)
-		print page_content
-		self.parse_page(page_content)
+		data=self.parse_page(page_content)
+		print data
 	
 	def generate_params(self):
 		params=self.ins_data
@@ -60,7 +61,26 @@ class FeeCrawler(object):
 	def parse_page(self,page_content):
 		if not page_content:
 			return
-		print page_content
+		soup=BeautifulSoup(page_content)
+		scripts=soup.find_all('script')
+		data=''
+		for script in scripts:
+			if not script.string:
+				continue
+			s=script.string.strip()
+			if s.startswith('var data'):
+				data=s.split('\n')[0].rstrip(';')
+				start=data.index('{')
+				data=data[start:]
+
+		if data:
+			d=json.loads(data)
+			print d['profitHigh']
+			print d['profitLow']
+			print d['profitMiddle']
+			
+				
+
 	
 
 		
