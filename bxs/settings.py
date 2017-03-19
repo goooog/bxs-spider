@@ -1,8 +1,12 @@
 # -*- coding:utf-8 -*-
 import requests
+import sys
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 COOKIES={
 	'er_id':'7074d7c9-7f5f-4103-9064-300e5e0d49e8',
