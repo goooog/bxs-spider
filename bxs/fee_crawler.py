@@ -11,8 +11,7 @@ from bs4 import BeautifulSoup
 class FeeCrawler(object):
 
 	def __init__(self,ins_data):
-		self.ins_data=copy.deepcopy(ins_data)
-		print self.ins_data
+		self.ins_data=ins_data
 
 	def run(self):
 		page_id=self.submit_planbook()
@@ -75,12 +74,13 @@ class FeeCrawler(object):
 
 		if data:
 			d=json.loads(data)
-			print d['profitHigh']
-			print d['profitLow']
-			print d['profitMiddle']
-			
+			print 'id=%s' % self.ins_data.get('insuranceTypeId')
+			print d.get('profitHigh')
+			print d.get('profitLow')
+			print d.get('profitMiddle')
+			print d.get('profit')
+			print '====================================================='	
+			print '\n'
 				
-
-	
 
 		
