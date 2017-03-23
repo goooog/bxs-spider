@@ -64,20 +64,30 @@ class InsuranceCrawler:
 		variables=dict()
 		return variables
 
-	def http_post(self,url,pb_input,is_quick_result):
-		time.sleep(1)
+	def http_post(self,url,pb_input,is_quick_result=False):
 		pb_input_json=json.dumps(pb_input,ensure_ascii=False)
 		payload=dict(combinePBInput=pb_input_json,callMethod=1,quickResult='true')
 		if is_quick_result:
 			payload['quickResult']=True
 		r=requests.post(url,data=payload,cookies=COOKIES,verify=False)
-		if not is_http_ok(r):
+		if not is_http_ok(r) or not r.json().has_key('data'):
 			return
 		data=r.json()['data']
 		return data.get('groupDefData')
+		
 
+	def get_variable_option(self,pb_data):
+		pb_input_json=json.dumps(pb_data,ensure_ascii=False)
+		payload=dict(combinePBInput=pb_input_json)
+		r=requests.post(GET_VERIFY_URL,data=payload,cookies=COOKIES,verify=False)
+		if not is_http_ok(r):
+			return
+		data=r.json()['data']
+		return data
+		
+		
 	
-	def get_default_data(self,age,sex):
+	def get_default_data(self,age,sex,need_fix=True):
 		common_data=copy.deepcopy(COMMON_DATA)
 		common_data['age']=age
 		common_data['sex']=sex
@@ -85,7 +95,10 @@ class InsuranceCrawler:
 		pb_data['insuranceTypeId']=self.insurance_id
 		pb_data['commonData']=common_data
 		data=self.http_post(GET_PB_URL,pb_data,True)
-		return self.fix_required_fields(data)
+		if need_fix:
+			return self.fix_required_fields(data)
+		else:
+			return data
 			
 	def fix_baoe_field(self,pb_data):
 		baofei=pb_data.get('allMainBaofTotal')
