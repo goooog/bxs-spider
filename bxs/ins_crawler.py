@@ -109,11 +109,13 @@ class InsuranceCrawler:
 				for key in keys:
 					values=dynamic_ranges[key]
 					if isinstance(values,dict):
+						temp=[]
 						for vk in values.keys():
 							combinations=self.generate_input_combinations(combinations,key,[vk])
 							for vkk in values[vk].keys():
 								vkk_values=values[vk][vkk]
-								combinations=self.generate_input_combinations(combinations,vkk,vkk_values)
+								temp+=self.generate_input_combinations(combinations,vkk,vkk_values)
+						combinations=temp
 					else:
 						combinations=self.generate_input_combinations(combinations,key,values)
 		return combinations
