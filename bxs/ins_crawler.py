@@ -11,11 +11,13 @@ import re
 from settings import *
 from tools import *
 from variables import *
+from db import DBUtil
 
 class InsuranceCrawler:
 
 	def __init__(self,insurance_id):
 		self.insurance_id=insurance_id
+		self.db=DBUtil()
 	
 	def run(self):
 		result=[]
@@ -33,6 +35,7 @@ class InsuranceCrawler:
 		return result
 	
 	def run_fee(self):
+		self.db.delete_by_id('delete from insurance_rate where insurance_id=%s',self.insurance_id)
 		self.default_data=self.get_default_data()
 		if not isinstance(self.default_data, dict):
 			print 'insurance not found',self.insurance_id
@@ -58,13 +61,33 @@ class InsuranceCrawler:
 		bao_type=ins['baoType']
 		main_ins=ins[bao_type]	
 
-		print 'age={0:<2} sex={1:<2} years={2:<2} baof={3:<6} baoe={4:<8}'.format(
+		print 'age={0:<2} sex={1:<2} years={2:<2} duration={3:<2} lingqu={4:<2} baof={5:<6} baoe={6:<8}'.format(
 					common_data.get('age'),
 					common_data.get('sex'),
 					main_ins.get('years'),
+					main_ins.get('duration'),
+					main_ins.get('lingqu'),
 					main_ins.get('baof'),
 					main_ins.get('baoe')
 				)
+		sql='insert into insurance_rate(insurance_id, insurance_name, sex, age, years, baoe, baof, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+		args=[]
+		args.append(ins_id)
+		args.append(main_ins.get('name'))
+		args.append(common_data.get('sex'))
+		args.append(common_data.get('age'))
+		args.append(main_ins.get('years'))
+		args.append(main_ins.get('baoe'))
+		args.append(main_ins.get('baof'))
+		args.append(main_ins.get('lingqu'))
+		args.append(main_ins.get('duration'))
+		args.append(main_ins.get('lingquTyp'))
+		args.append(main_ins.get('smoke'))
+		args.append(main_ins.get('social'))
+		args.append(main_ins.get('plan'))
+		
+		self.db.insert(sql,args)
+		
 
 			
 									
@@ -79,7 +102,7 @@ class InsuranceCrawler:
 		combinations.append(pb_data)
 		for(field,values) in fixed_ranges.items():
 			combinations=self.generate_input_combinations(combinations,field,values)
-		print age,sex,dynamic_ranges
+		print age,sex,json.dumps(dynamic_ranges,ensure_ascii=False)
 		if isinstance(dynamic_ranges,dict):
 			keys=dynamic_ranges.keys()
 			if len(keys)>0:
@@ -87,11 +110,10 @@ class InsuranceCrawler:
 					values=dynamic_ranges[key]
 					if isinstance(values,dict):
 						for vk in values.keys():
-							combinations=self.generate_input_combinations(combinations,key,vk)
+							combinations=self.generate_input_combinations(combinations,key,[vk])
 							for vkk in values[vk].keys():
 								vkk_values=values[vk][vkk]
-								for vkk_value in vkk_values:
-									combinations=self.generate_input_combinations(combinations,vkk,vkk_value)
+								combinations=self.generate_input_combinations(combinations,vkk,vkk_values)
 					else:
 						combinations=self.generate_input_combinations(combinations,key,values)
 		return combinations
@@ -182,7 +204,7 @@ class InsuranceCrawler:
 					continue
 				pair=ret[props[0]]
 				pair[key_value]={}
-				pair[key_value][props[1]]=value.split(',')
+				pair[key_value][props[1]]=[self.parse_var_value(v) for v in value.split(',')]
 				
 		return ret
 	
