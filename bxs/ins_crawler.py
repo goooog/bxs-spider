@@ -7,8 +7,10 @@ import json
 import requests
 import copy
 import pprint
+import re
 from settings import *
 from tools import *
+from variables import *
 
 class InsuranceCrawler:
 
@@ -30,6 +32,102 @@ class InsuranceCrawler:
 
 		return result
 	
+	def run_fee(self):
+		self.default_data=self.get_default_data()
+		if not isinstance(self.default_data, dict):
+			print 'insurance not found',self.insurance_id
+			return
+		inputs=[]
+		for sex in var_fixed_range['sex']:
+			for age in var_fixed_range['age']:
+				try:
+					inputs+=self.generate_possible_inputs(age,sex)
+				except BaseException, e:
+					pass
+		for data in inputs:
+			resp=self.calculate(data)
+			self.print_fee_rate(resp)
+			
+	def print_fee_rate(self,resp):
+		print json.dumps(resp,ensure_ascii=False)
+
+			
+									
+	def generate_possible_inputs(self,age,sex):
+		combinations=[]
+		options=self.get_verify_value(age,sex)
+		dynamic_ranges=self.parse_var_range(options)
+		fixed_ranges=self.generate_fixed_var_range()
+		pb_data=copy.deepcopy(self.default_data)
+		self.update_field_value(pb_data,'age',age)	
+		self.update_field_value(pb_data,'sex',sex)	
+		combinations.append(pb_data)
+		for(field,values) in fixed_ranges.items():
+			combinations=self.generate_input_combinations(combinations,field,values)
+		if isinstance(dynamic_ranges,dict):
+			keys=dynamic_ranges.keys()
+			if len(keys)>0:
+				for key in keys:
+					values=dynamic_ranges[key]
+					if isinstance(values,dict):
+						for vk in values.keys():
+							combinations=self.generate_input_combinations(combinations,key,vk)
+							for vkk in values[vk].keys():
+								vkk_values=values[vk][vkk]
+								for vkk_value in vkk_values:
+									combinations=self.generate_input_combinations(combinations,vkk,vkk_value)
+					else:
+						for value in values:
+							combinations=self.generate_input_combinations(combinations,key,value)
+		return combinations
+
+	def generate_input_combinations(self,combinations,field,values):
+		if not values or len(values)==0:
+			return combinations
+
+		ret=[]
+		for value in values:
+			for pb in combinations:
+				pb=copy.deepcopy(pb)
+				self.update_field_value(pb,field,value)
+				ret.append(pb)
+				
+		return ret
+				
+
+	def generate_fixed_var_range(self):
+		pb_data=self.default_data
+		ins_data=pb_data['allMainInsData']
+		ret={}
+		for (key,ins) in ins_data.items():
+			if not isinstance(ins,dict) or not ins.has_key('baoType'):
+				continue
+			bao_type=ins['baoType']
+			ins_vars=ins[bao_type]
+			if not isinstance(ins_vars,dict):
+				continue
+			for key in ins_vars.keys():
+				if key in var_fixed_range:
+					values=var_fixed_range[key]
+					ret[key]=values
+		return ret
+
+	def get_verify_value(self,age,sex):
+		pb_data=copy.deepcopy(self.default_data)
+		self.update_field_value(pb_data,'age',age)
+		self.update_field_value(pb_data,'sex',sex)
+		
+		if isinstance(pb_data,dict) and pb_data.has_key('allMainInsData'):
+			ins_data=pb_data['allMainInsData']
+			for (key,ins) in ins_data.items():
+				if not ins.has_key('baoType'):
+					continue
+				bao_type=ins['baoType']
+				pb_data['currActive']=key
+				pb_data['callMethod']=1
+				return self.get_variable_option(pb_data)
+
+	
 	def generate_input_combination(self):
 		combinations=[self.default_data]
 		for (field,values) in self.variables.items():
@@ -46,6 +144,45 @@ class InsuranceCrawler:
 		self.update_field_value(pb_data,field,field_value)
 		return self.calculate(data)
 	
+	def parse_var_range(self,data):
+		if not isinstance(data,dict) or not data.has_key('verifyArr'):
+			return
+		props=data['verifyArr']
+		values=data['verifyValue']
+		if len(props)>0 and not values:
+			raise BaseException('invalid input')
+
+		ret={}
+		if len(props)==1:
+			ret[props[0]]=[]	
+			for value in values.split(','):
+				ret[props[0]].append(self.parse_var_value(value))
+		elif len(props)==2:
+			if not isinstance(values,dict):
+				return
+			ret[props[0]]={}	
+			for(key,value) in values.items():
+				key_value=self.parse_var_value(key)
+				if not key_value:
+					continue
+				pair=ret[props[0]]
+				pair[key_value]={}
+				pair[key_value][props[1]]=value.split(',')
+				
+		return ret
+	
+	def parse_var_value(self,value):
+		if value=='趸交':
+			return 1
+		elif value=='终身':
+			return 100
+		match=re.match(r'.*?(\d+).*',value)
+		if match:
+			return match.group(1)
+		else:
+			print 'not matched:'+value
+
+
 	def update_field_value(self,pb_data,field,field_value):
 		common_fields=('age','sex')
 		if field in common_fields:
@@ -54,7 +191,12 @@ class InsuranceCrawler:
 			ins_data=pb_data['allMainInsData']
 			for (key,ins) in ins_data.items():
 				bao_type=ins['baoType']
-				ins[bao_type][field]=field_value
+				target=ins[bao_type]
+				target[field]=field_value
+				if field=='baoe' and target.has_key('baofToBaoe'):
+					target['baofToBaoe']=0
+				elif field=='baof' and target.has_key('baofToBaoe'):
+					target['baofToBaoe']=1
 	
 	def calculate(self,pb_data):
 		return self.http_post(CALCULATE_PB_URL,pb_data,False)
@@ -87,7 +229,7 @@ class InsuranceCrawler:
 		
 		
 	
-	def get_default_data(self,age,sex,need_fix=True):
+	def get_default_data(self,age=0,sex=1,need_fix=True):
 		common_data=copy.deepcopy(COMMON_DATA)
 		common_data['age']=age
 		common_data['sex']=sex
@@ -110,7 +252,16 @@ class InsuranceCrawler:
 			if baofei>0:
 				exist_bf=True
 		if not exist_bf:
-			self.update_field_value(pb_data,'baoe',100000)
+			ins_data=pb_data['allMainInsData']
+			for (key,ins) in ins_data.items():
+				bao_type=ins['baoType']
+				variables=ins[bao_type]
+				if variables.has_key('baoe'):
+					baoe='{0}'.format(variables['baoe'])
+					if baoe!='-':
+						self.update_field_value(pb_data,'baoe',200000)
+				elif variables.has_key('baof'):
+						self.update_field_value(pb_data,'baof',10000)
 	
 	def select_required_ins(self,pb_data):
 		ins_data=pb_data['allMainInsData']
