@@ -8,10 +8,12 @@ import requests
 import copy
 import pprint
 import re
+import logging
 from settings import *
 from tools import *
 from variables import *
 from db import DBUtil
+from logs.log import *
 
 class InsuranceCrawler:
 
@@ -38,7 +40,7 @@ class InsuranceCrawler:
 		self.db.delete_by_id('delete from insurance_rate where insurance_id=%s',self.insurance_id)
 		self.default_data=self.get_default_data()
 		if not isinstance(self.default_data, dict):
-			print 'insurance not found',self.insurance_id
+			logging.warning('insurance not found:%s',self.insurance_id)
 			return
 		inputs=[]
 		for sex in var_fixed_range['sex']:
@@ -61,7 +63,7 @@ class InsuranceCrawler:
 		bao_type=ins['baoType']
 		main_ins=ins[bao_type]	
 
-		print 'age={0:<2} sex={1:<2} years={2:<2} duration={3:<2} lingqu={4:<2} baof={5:<6} baoe={6:<8}'.format(
+		logging.info('age={0:<2} sex={1:<2} years={2:<2} duration={3:<2} lingqu={4:<2} baof={5:<6} baoe={6:<8}'.format(
 					common_data.get('age'),
 					common_data.get('sex'),
 					main_ins.get('years'),
@@ -69,7 +71,7 @@ class InsuranceCrawler:
 					main_ins.get('lingqu'),
 					main_ins.get('baof'),
 					main_ins.get('baoe')
-				)
+				))
 		sql='insert into insurance_rate(insurance_id, insurance_name, sex, age, years, baoe, baof, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
 		args=[]
 		args.append(ins_id)
@@ -80,7 +82,7 @@ class InsuranceCrawler:
 		args.append(main_ins.get('baoe'))
 		args.append(main_ins.get('baof'))
 		args.append(main_ins.get('lingqu'))
-		args.append(main_ins.get('duration'))
+		args.append(self.parse_var_value(main_ins.get('duration')))
 		args.append(main_ins.get('lingquTyp'))
 		args.append(main_ins.get('smoke'))
 		args.append(main_ins.get('social'))
@@ -102,7 +104,7 @@ class InsuranceCrawler:
 		combinations.append(pb_data)
 		for(field,values) in fixed_ranges.items():
 			combinations=self.generate_input_combinations(combinations,field,values)
-		print age,sex,json.dumps(dynamic_ranges,ensure_ascii=False)
+		logging.info('age=%s sex=%s range=%s',age,sex,json.dumps(dynamic_ranges,ensure_ascii=False))
 		if isinstance(dynamic_ranges,dict):
 			keys=dynamic_ranges.keys()
 			if len(keys)>0:
@@ -219,7 +221,8 @@ class InsuranceCrawler:
 		if match:
 			return match.group(1)
 		else:
-			print 'not matched:'+value
+			logging.warning('not matched:%s',value)
+			return value
 
 
 	def update_field_value(self,pb_data,field,field_value):
