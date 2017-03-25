@@ -58,7 +58,7 @@ class InsuranceCrawler:
 			print 'invalid response'
 		common_data=resp['commonData']
 		ins_id=resp['insuranceTypeId']
-		ins_pingyin=resp['currActive']
+		ins_pingyin=resp['allMainInsData'].keys()[0]
 		ins=resp['allMainInsData'][ins_pingyin]
 		bao_type=ins['baoType']
 		main_ins=ins[bao_type]	
