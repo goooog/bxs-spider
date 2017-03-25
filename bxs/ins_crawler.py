@@ -213,6 +213,8 @@ class InsuranceCrawler:
 		return ret
 	
 	def parse_var_value(self,value):
+		if not isinstance(value,basestring):
+			return
 		if value=='趸交':
 			return 1
 		elif value=='终身':
@@ -287,8 +289,8 @@ class InsuranceCrawler:
 	def fix_baoe_field(self,pb_data):
 		baofei=pb_data.get('allMainBaofTotal')
 		exist_bf=False
-		if isinstance(baofei,str):
-			if len(str)>0 and eval(baofei)>0:
+		if isinstance(baofei,basestring):
+			if len(baofei)>0 and eval(baofei)>0:
 				exist_bf=True
 		if isinstance(baofei,int):
 			if baofei>0:

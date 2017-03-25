@@ -10,7 +10,7 @@ ins_ids=range(461,812)+range(3067,4000)
 for id in ins_ids:
 	try:
 		logging.info('Start:id=%s',id)
-		ins_crawler=InsuranceCrawler(503)
+		ins_crawler=InsuranceCrawler(id)
 		ins_crawler.run_fee()
 		break
 	except BaseException,e:
