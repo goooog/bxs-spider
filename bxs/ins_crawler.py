@@ -49,7 +49,22 @@ class InsuranceCrawler:
 			self.print_fee_rate(resp)
 			
 	def print_fee_rate(self,resp):
-		print json.dumps(resp,ensure_ascii=False)
+		if not isinstance(resp,dict):
+			print 'invalid response'
+		common_data=resp['commonData']
+		ins_id=resp['insuranceTypeId']
+		ins_pingyin=resp['currActive']
+		ins=resp['allMainInsData'][ins_pingyin]
+		bao_type=ins['baoType']
+		main_ins=ins[bao_type]	
+
+		print 'age={0:<2} sex={1:<2} years={2:<2} baof={3:<6} baoe={4:<8}'.format(
+					common_data.get('age'),
+					common_data.get('sex'),
+					main_ins.get('years'),
+					main_ins.get('baof'),
+					main_ins.get('baoe')
+				)
 
 			
 									
@@ -64,6 +79,7 @@ class InsuranceCrawler:
 		combinations.append(pb_data)
 		for(field,values) in fixed_ranges.items():
 			combinations=self.generate_input_combinations(combinations,field,values)
+		print age,sex,dynamic_ranges
 		if isinstance(dynamic_ranges,dict):
 			keys=dynamic_ranges.keys()
 			if len(keys)>0:
@@ -77,8 +93,7 @@ class InsuranceCrawler:
 								for vkk_value in vkk_values:
 									combinations=self.generate_input_combinations(combinations,vkk,vkk_value)
 					else:
-						for value in values:
-							combinations=self.generate_input_combinations(combinations,key,value)
+						combinations=self.generate_input_combinations(combinations,key,values)
 		return combinations
 
 	def generate_input_combinations(self,combinations,field,values):
@@ -275,11 +290,10 @@ class InsuranceCrawler:
 					continue
 				is_required=v.get('isRequired')
 				if isinstance(is_required,bool):
-					 v['isChecked']=is_required
+					 if is_required:
+						 v['isChecked']=True
 				elif k==bao_type:
 					 v['isChecked']=True
-				else:
-					 v['isChecked']=False
 						
 
 	def fix_required_fields(self,pb_data):
