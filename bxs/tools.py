@@ -43,5 +43,5 @@ def str2int(value):
 	if match:
 		return match.group(1)
 	else:
-		logging.warning('not matched:%s',value)
+		logging.warning('Digits not found:%s',value)
 		return ''

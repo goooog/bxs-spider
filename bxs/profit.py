@@ -27,8 +27,8 @@ class ProfitCrawler(object):
 		params=self.inscrawler.generate_request_params()
 		for param in params:
 			param=self.inscrawler.calculate(param)
-			data=self.__crawl_profits(param)
 			profit_id=self.insdao.save_insurance('insurance_profit_variable',param)
+			data=self.__crawl_profits(param)
 			self.profitdao.save_profits(data,profit_id,self.insurance_id)
 	
 	def __crawl_profits(self,params):
@@ -78,7 +78,7 @@ class ProfitCrawler(object):
 	def __parse_planbook_page(self,page_content):
 		if not page_content:
 			return
-		soup=BeautifulSoup(page_content)
+		soup=BeautifulSoup(page_content,'html.parser')
 		scripts=soup.find_all('script')
 		data=''
 		for script in scripts:

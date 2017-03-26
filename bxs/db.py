@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
+import logging
+from loggings import *
 from settings import DB_CONFIG
 from tools import str2int
 

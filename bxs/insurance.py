@@ -128,13 +128,16 @@ class InsuranceCrawler:
 		props=data['verifyArr']
 		values=data['verifyValue']
 		if len(props)>0 and not values:
-			raise BaseException('invalid input')
+			raise BaseException('get_verify_value error:variable invalid')
 
 		ret={}
 		if len(props)==1:
 			ret[props[0]]=[]	
 			for value in values.split(','):
-				ret[props[0]].append(str2int(value))
+				key_value=str2int(value)
+				if not key_value:
+					continue
+				ret[props[0]].append(key_value)
 		elif len(props)==2:
 			if not isinstance(values,dict):
 				return
@@ -222,7 +225,7 @@ class InsuranceCrawler:
 				if variables.has_key('baoe'):
 					baoe='{0}'.format(variables['baoe'])
 					if baoe!='-':
-						self.__update_field_value(pb_data,'baoe',200000)
+						self.__update_field_value(pb_data,'baoe',20000)
 				elif variables.has_key('baof'):
 						self.__update_field_value(pb_data,'baof',10000)
 	
