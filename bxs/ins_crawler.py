@@ -14,6 +14,7 @@ from tools import *
 from variables import *
 from db import DBUtil
 from logs.log import *
+from profit import ProfitCrawler
 
 class InsuranceCrawler:
 
@@ -51,9 +52,68 @@ class InsuranceCrawler:
 					pass
 		for data in inputs:
 			resp=self.calculate(data)
-			self.print_fee_rate(resp)
+			self.save_insurance_info('insurance_rate',resp)
+	
+	def generate_request_params(self):
+		ret=[]
+		self.default_data=self.get_default_data()
+		if not isinstance(self.default_data, dict):
+			logging.warning('insurance not found:%s',self.insurance_id)
+			return ret
+		for sex in var_fixed_range['sex']:
+			for age in var_fixed_range['age']:
+				try:
+					ret+=self.generate_possible_inputs(age,sex)
+				except BaseException, e:
+					logging.error('generate params error:%s',e)
+		return ret
+
+	
+	def run_profit(self):
+		self.delete_profit()
+		params=self.generate_request_params()
+		for param in params:
+			param=self.calculate(param)
+			profit_crawler=ProfitCrawler(param)
+			data=profit_crawler.run()
+			self.save_profit_data(data,param)
+	
+	def save_profit_data(self,data,param):
+		if not isinstance(data,dict):
+			logging.warning('Invalid profit data:%s',data)
+			return
+		pid=self.save_insurance_info('insurance_variable',param)
+		self.save_profit_list(data.get('profitHigh'),pid,'H')
+		self.save_profit_list(data.get('profitMiddle'),pid,'M')
+		self.save_profit_list(data.get('profitLow'),pid,'L')
+	
+	
+	def save_profit_list(self,profit,pid,profit_grade):
+		if not isinstance(profit,list) or len(profit)==0:
+			return
+		for data in profit:
+			name=data.get('name')
+			self.save_profit_value(pid,data.get('high'),profit_grade,'H',name)
+			self.save_profit_value(pid,data.get('middle'),profit_grade,'M',name)
+			self.save_profit_value(pid,data.get('low'),profit_grade,'L',name)
+
+	def save_profit_value(self,pid,profit_value,profit_grade,wanneng_grade,name):
+		if not isinstance(profit_value,list) or len(profit_value)==0:
+			return
+		sql='INSERT INTO insurance_profit_value ( `profit_id`, `insurance_id`, `name`, `money`, `wanneng_grade`, `profit_grade`, `policy_year`) VALUES(%s,%s,%s,%s,%s,%s,%s)'
+
+		i=1
+		for v in profit_value:
+			value=[pid,self.insurance_id,name,v,wanneng_grade,profit_grade,i]	
+			self.db.insert(sql,value)
+			i=i+1
 			
-	def print_fee_rate(self,resp):
+	
+	def delete_profit(self):
+		self.db.delete_by_id('delete from insurance_variable where insurance_id=%s',self.insurance_id)
+
+
+	def save_insurance_info(self,table,resp):
 		if not isinstance(resp,dict):
 			print 'invalid response'
 		common_data=resp['commonData']
@@ -63,16 +123,7 @@ class InsuranceCrawler:
 		bao_type=ins['baoType']
 		main_ins=ins[bao_type]	
 
-		logging.info('age={0:<2} sex={1:<2} years={2:<2} duration={3:<2} lingqu={4:<2} baof={5:<6} baoe={6:<8}'.format(
-					common_data.get('age'),
-					common_data.get('sex'),
-					main_ins.get('years'),
-					main_ins.get('duration'),
-					main_ins.get('lingqu'),
-					main_ins.get('baof'),
-					main_ins.get('baoe')
-				))
-		sql='insert into insurance_rate(insurance_id, insurance_name, sex, age, years, baoe, baof, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+		sql='insert into '+table+'(insurance_id, insurance_name, sex, age, years, baoe, baof, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
 		args=[]
 		args.append(ins_id)
 		args.append(main_ins.get('name'))
@@ -88,9 +139,8 @@ class InsuranceCrawler:
 		args.append(main_ins.get('social'))
 		args.append(main_ins.get('plan'))
 		
-		self.db.insert(sql,args)
+		return self.db.insert(sql,args)
 		
-
 			
 									
 	def generate_possible_inputs(self,age,sex):
@@ -224,7 +274,7 @@ class InsuranceCrawler:
 			return match.group(1)
 		else:
 			logging.warning('not matched:%s',value)
-			return value
+			return ''
 
 
 	def update_field_value(self,pb_data,field,field_value):
@@ -251,6 +301,7 @@ class InsuranceCrawler:
 		return variables
 
 	def http_post(self,url,pb_input,is_quick_result=False):
+		time.sleep(1)
 		pb_input_json=json.dumps(pb_input,ensure_ascii=False)
 		payload=dict(combinePBInput=pb_input_json,callMethod=1,quickResult='true')
 		if is_quick_result:
@@ -262,7 +313,7 @@ class InsuranceCrawler:
 		return data.get('groupDefData')
 	
 	def _http_post(self,url,payload):
-		max_retry=3
+		max_retry=6
 		for i in range(0,max_retry):
 			try:
 				r=requests.post(url,data=payload,cookies=COOKIES,verify=False,timeout=10)

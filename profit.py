@@ -5,13 +5,12 @@ import logging
 from bxs.ins_crawler import InsuranceCrawler
 from bxs.logs.log import *
 
-#ins_crawler=InsuranceCrawler(634)
-ins_ids=[562]+range(568,812)+range(3067,4000)
+ins_ids=range(634,635)
 for id in ins_ids:
 	try:
-		logging.info('Start:id=%s',id)
+		logging.info('Profit start:id=%s',id)
 		ins_crawler=InsuranceCrawler(id)
-		ins_crawler.run_fee()
+		ins_crawler.run_profit()
 	except BaseException,e:
-		logging.error('Failed:id=%s,error=%s',id,e)
+		logging.error('Profit failed:id=%s,error=%s',id,e)
 print 'finish!!!!!'
