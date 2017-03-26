@@ -255,17 +255,27 @@ class InsuranceCrawler:
 		payload=dict(combinePBInput=pb_input_json,callMethod=1,quickResult='true')
 		if is_quick_result:
 			payload['quickResult']=True
-		r=requests.post(url,data=payload,cookies=COOKIES,verify=False)
+		r=self._http_post(url,payload)
 		if not is_http_ok(r) or not r.json().has_key('data'):
 			return
 		data=r.json()['data']
 		return data.get('groupDefData')
+	
+	def _http_post(self,url,payload):
+		max_retry=3
+		for i in range(0,max_retry):
+			try:
+				r=requests.post(url,data=payload,cookies=COOKIES,verify=False,timeout=10)
+				return r
+			except requests.exceptions.RequestException,e:
+				logging.error('Http error:%s',e)
+
 		
 
 	def get_variable_option(self,pb_data):
 		pb_input_json=json.dumps(pb_data,ensure_ascii=False)
 		payload=dict(combinePBInput=pb_input_json)
-		r=requests.post(GET_VERIFY_URL,data=payload,cookies=COOKIES,verify=False)
+		r=self._http_post(GET_VERIFY_URL,payload)
 		if not is_http_ok(r):
 			return
 		data=r.json()['data']
