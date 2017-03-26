@@ -6,21 +6,38 @@ from tools import *
 import json
 import requests
 import copy
+import logging
+
+from loggings import *
 from bs4 import BeautifulSoup
+from insurance import InsuranceCrawler
+from db import ProfitDao,InsuranceDao
 
 class ProfitCrawler(object):
 
-	def __init__(self,ins_data):
-		self.ins_data=ins_data
+	def __init__(self,insurance_id):
+		self.insurance_id=insurance_id
+		self.inscrawler=InsuranceCrawler(insurance_id)
+		self.profitdao=ProfitDao()
+		self.insdao=InsuranceDao()
+
 
 	def run(self):
-		page_id=self.submit_planbook()
-		page_content=self.get_planbook_page(page_id)
-		data=self.parse_page(page_content)
+		self.profitdao.delete_profits(self.insurance_id)
+		params=self.inscrawler.generate_request_params()
+		for param in params:
+			param=self.inscrawler.calculate(param)
+			data=self.__crawl_profits(param)
+			profit_id=self.insdao.save_insurance('insurance_profit_variable',param)
+			self.profitdao.save_profits(data,profit_id,self.insurance_id)
+	
+	def __crawl_profits(self,params):
+		page_id=self.__submit_planbook(params)
+		page_content=self.__get_planbook_page(page_id)
+		data=self.__parse_planbook_page(page_content)
 		return data
 	
-	def generate_params(self):
-		params=self.ins_data
+	def __rebuild_params(self,params):
 		params['insureList']=[]
 		if not params.has_key('allMainInsData'):
 			return params
@@ -43,21 +60,22 @@ class ProfitCrawler(object):
 		return params
 
 			
-	def submit_planbook(self):
-		pb_input=self.generate_params()
+	def __submit_planbook(self,params):
+		pb_input=self.__rebuild_params(params)
 		payload=dict(combinePBInput=json.dumps(pb_input,ensure_ascii=False))
-		r=requests.post(CREAT_PB_URL,data=payload,cookies=COOKIES,verify=False)
-		return r.json()['data']
+		r=http_post(CREAT_PB_URL,payload)
+		if is_http_ok(r):
+			return r.json()['data']
 	
-	def get_planbook_page(self,page_id):
+	def __get_planbook_page(self,page_id):
 		if not page_id:
 			return
-		r=requests.get(PB_PAGE_URL+page_id,cookies=COOKIES,verify=False)
+		r=http_get(PB_PAGE_URL+page_id)
 		if is_http_ok(r):
 			return r.text
 
 	
-	def parse_page(self,page_content):
+	def __parse_planbook_page(self,page_content):
 		if not page_content:
 			return
 		soup=BeautifulSoup(page_content)
