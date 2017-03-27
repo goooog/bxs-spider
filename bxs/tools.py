@@ -16,7 +16,7 @@ def http_post(url,payload):
 	max_retry=6
 	for i in range(0,max_retry):
 		try:
-			time.sleep(1)
+			time.sleep(0.5)
 			r=requests.post(url,data=payload,cookies=COOKIES,verify=False,timeout=10)
 			return r
 		except requests.exceptions.RequestException,e:
@@ -26,7 +26,7 @@ def http_get(url):
 	max_retry=6
 	for i in range(0,max_retry):
 		try:
-			time.sleep(1)
+			time.sleep(0.5)
 			r=requests.get(url,cookies=COOKIES,verify=False,timeout=10)
 			return r
 		except requests.exceptions.RequestException,e:

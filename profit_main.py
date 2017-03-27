@@ -5,7 +5,7 @@ import logging
 from bxs.profit import ProfitCrawler
 from bxs.loggings import *
 
-ins_ids=range(300,5000)
+ins_ids=range(546,547)
 for id in ins_ids:
 	try:
 		logging.info('Profit start:id=%s',id)

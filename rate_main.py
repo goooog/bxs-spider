@@ -5,7 +5,7 @@ import logging
 from bxs.insurance import InsuranceCrawler
 from bxs.loggings import *
 
-ins_ids=range(3000,5000)
+ins_ids=range(3157,5000)
 for id in ins_ids:
 	try:
 		logging.info('Start:id=%s',id)
