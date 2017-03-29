@@ -70,7 +70,6 @@ class InsuranceCrawler:
 					ret+=self.__generate_possible_inputs(age,sex)
 				except BaseException, e:
 					logging.error('generate params error:%s',e)
-					break
 		return ret
 
 									
@@ -203,8 +202,8 @@ class InsuranceCrawler:
 	def __http_post(self,url,pb_input,is_quick_result=False):
 		pb_input_json=json.dumps(pb_input,ensure_ascii=False)
 		payload=dict(combinePBInput=pb_input_json,callMethod=1)
-		#if is_quick_result:
-		#	payload['quickResult']=True
+		if is_quick_result:
+			payload['quickResult']='true'
 		r=http_post(url,payload)
 		if not is_http_ok(r) or not r.json().has_key('data'):
 			return
@@ -223,14 +222,18 @@ class InsuranceCrawler:
 		
 		
 	
-	def __get_default_data(self,age=0,sex=1,need_fix=True):
+	def __get_default_data(self,age=18,sex=1,need_fix=True):
 		common_data=copy.deepcopy(COMMON_DATA)
 		common_data['age']=age
 		common_data['sex']=sex
 		pb_data=dict()
 		pb_data['insuranceTypeId']=self.insurance_id
 		pb_data['commonData']=common_data
-		data=self.__http_post(GET_PB_URL,pb_data,True)
+		is_quick_result=False
+		#if self.insurance_id in NOT_QUICK_RESULT_IDS:
+		#	is_quick_result=False
+
+		data=self.__http_post(GET_PB_URL,pb_data,is_quick_result)
 		if need_fix:
 			return self.__fix_required_fields(data)
 		else:
@@ -249,13 +252,32 @@ class InsuranceCrawler:
 			ins_data=pb_data['allMainInsData']
 			for (key,ins) in ins_data.items():
 				bao_type=ins['baoType']
-				variables=ins[bao_type]
-				if variables.has_key('baoe'):
-					baoe='{0}'.format(variables['baoe'])
-					if baoe!='-':
-						self.__update_field_value(pb_data,'baoe',20000)
-				elif variables.has_key('baof'):
-						self.__update_field_value(pb_data,'baof',10000)
+				ains=ins[bao_type]
+				self.__set_baoebaof(ains)
+
+				if self.insurance_id in DIFF_INS_IDS:
+					for p in ins:
+						if not isinstance(ins[p],dict) or p==bao_type:
+							continue
+						ains=ins[p]
+						if ains.get('isChecked'):
+							if ains.has_key('isShow') and not ains['isShow']:
+								ains['isChecked']=False
+							else:
+								self.__set_baoebaof(ains)
+
+	def __set_baoebaof(self,ins):
+		if ins.has_key('baoe'):
+			baoe=str(ins['baoe'])
+			if baoe!='-':
+				ins['baoe']=20000
+				if ins.has_key('baofToBaoe'):
+					ins['baofToBaoe']=0
+		elif ins.has_key('baof'):
+				ins['baof']=10000
+				if ins.has_key('baofToBaoe'):
+					ins['baofToBaoe']=1
+
 	
 	def __select_required_ins(self,pb_data):
 		ins_data=pb_data['allMainInsData']

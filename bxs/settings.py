@@ -48,5 +48,6 @@ DB_CONFIG=dict(
 	database='bxs'
 )
 
+NOT_QUICK_RESULT_IDS=[]
 
 
