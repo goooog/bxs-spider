@@ -9,6 +9,7 @@ import copy
 import pprint
 import re
 import logging
+import math
 from settings import *
 from tools import *
 from variables import *
@@ -30,6 +31,32 @@ class InsuranceCrawler:
 		for data in inputs:
 			resp=self.calculate(data)
 			self.insdao.save_insurance('insurance_rate',resp)
+
+	def fix_baofei(self):
+		if self.insdao.exists(self.insurance_id):
+			if self.__verify_baof_correct():
+				logging.info('baof is correct:%s',self.insurance_id)
+				return
+			else:
+				logging.warn('baof is wrong:%s',self.insurance_id)
+
+		self.run()
+
+	def __verify_baof_correct(self):
+		insurance=self.__get_default_data()
+		if not isinstance(insurance,dict):
+			return False
+		ins_pingyin=insurance['allMainInsData'].keys()[0]
+		ins=insurance['allMainInsData'][ins_pingyin]
+		bao_type=ins['baoType']
+		main_ins=ins[bao_type]
+		baof=main_ins.get('baof')
+		baof_total=ins.get('fBaofTotal')
+		if math.floor(float(baof))==math.floor(float(baof_total)):
+			return True
+		else:
+			return False
+
 	
 	def generate_request_params(self):
 		ret=[]
@@ -43,6 +70,7 @@ class InsuranceCrawler:
 					ret+=self.__generate_possible_inputs(age,sex)
 				except BaseException, e:
 					logging.error('generate params error:%s',e)
+					break
 		return ret
 
 									
@@ -174,9 +202,9 @@ class InsuranceCrawler:
 
 	def __http_post(self,url,pb_input,is_quick_result=False):
 		pb_input_json=json.dumps(pb_input,ensure_ascii=False)
-		payload=dict(combinePBInput=pb_input_json,callMethod=1,quickResult='true')
-		if is_quick_result:
-			payload['quickResult']=True
+		payload=dict(combinePBInput=pb_input_json,callMethod=1)
+		#if is_quick_result:
+		#	payload['quickResult']=True
 		r=http_post(url,payload)
 		if not is_http_ok(r) or not r.json().has_key('data'):
 			return

@@ -45,6 +45,27 @@ class DBUtil:
 				conn.close()
 		return ret
 				
+	def fetchone(self,sql,args):
+		conn=None
+		cur=None
+		ret=None
+		try:
+			conn=self.__get_connection()
+			cur=conn.cursor()
+			cur.execute(sql,args)
+			ret=cur.fetchone()
+		except BaseException,e:
+			print 'exception:',e
+			if conn:
+				conn.rollback()
+			raise
+		finally:
+			if cur:
+				cur.close()
+			if conn:
+				conn.close()
+		return ret
+
 	def delete_by_id(self,sql,_id):
 		return self.execute(sql,[_id])
 
@@ -110,7 +131,7 @@ class InsuranceDao:
 		bao_type=ins['baoType']
 		main_ins=ins[bao_type]	
 
-		sql='insert into '+table+'(insurance_id, insurance_name, sex, age, years, baoe, baof, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+		sql='insert into '+table+'(insurance_id, insurance_name, sex, age, years, baoe, baof,baof_total, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
 		args=[]
 		args.append(ins_id)
 		args.append(main_ins.get('name'))
@@ -119,6 +140,7 @@ class InsuranceDao:
 		args.append(main_ins.get('years'))
 		args.append(main_ins.get('baoe'))
 		args.append(main_ins.get('baof'))
+		args.append(ins.get('fBaofTotal'))
 		args.append(main_ins.get('lingqu'))
 		args.append(str2int(main_ins.get('duration')))
 		args.append(main_ins.get('lingquTyp'))
@@ -128,3 +150,12 @@ class InsuranceDao:
 		
 		return self.db.insert(sql,args)
 		
+	def exists(self,insurance_id):
+		return not not self.db.fetchone('select * from insurance_rate where insurance_id=%s',[insurance_id]); 
+
+
+if __name__=='__main__':
+	insdao=InsuranceDao()
+	print insdao.exists(1)
+	print insdao.exists(462)
+	print insdao.exists(3496)
