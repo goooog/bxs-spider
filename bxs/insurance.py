@@ -270,10 +270,12 @@ class InsuranceCrawler:
 		if ins.has_key('baoe'):
 			baoe=str(ins['baoe'])
 			if baoe!='-':
-				ins['baoe']=20000
+				ins['baoe']=200000
 				if ins.has_key('baofToBaoe'):
 					ins['baofToBaoe']=0
 		elif ins.has_key('baof'):
+			baof=str(ins['baof'])
+			if baof!='-':
 				ins['baof']=10000
 				if ins.has_key('baofToBaoe'):
 					ins['baofToBaoe']=1

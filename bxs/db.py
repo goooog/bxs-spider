@@ -131,7 +131,7 @@ class InsuranceDao:
 		bao_type=ins['baoType']
 		main_ins=ins[bao_type]	
 
-		sql='insert into '+table+'(insurance_id, insurance_name, sex, age, years, baoe, baof,baof_total, lingqu, duration, lingqu_type, smoke, social, plan)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+		sql='insert into '+table+'(insurance_id, insurance_name, sex, age, years, baoe, baof,baof_total, lingqu, duration, lingqu_type, smoke, social, plan,baoe1,baof1,baoe2,baof2,baoe3,baof3)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
 		args=[]
 		args.append(ins_id)
 		args.append(main_ins.get('name'))
@@ -147,9 +147,29 @@ class InsuranceDao:
 		args.append(main_ins.get('smoke'))
 		args.append(main_ins.get('social'))
 		args.append(main_ins.get('plan'))
+		ins_names=self.__get_checked_ins(ins,bao_type)
+		logging.info('id=%s,ins names:%s',ins_id,ins_names)
+		for i in range(0,3):
+			baoe=None
+			baof=None
+			if i<len(ins_names):
+				baoe=ins[ins_names[i]].get('baoe')
+				baof=ins[ins_names[i]].get('baof')
+			args.append(baoe)
+			args.append(baof)
 		
 		return self.db.insert(sql,args)
 		
+
+	def __get_checked_ins(self,ins_data,bao_type):
+		names=[]
+		for (key,ins) in ins_data.items():
+			if key!=bao_type and isinstance(ins,dict) and ins.get('isChecked') and ins.has_key('baoe'):
+				names.append(key)
+		names.sort()
+		return names
+
+
 	def exists(self,insurance_id):
 		return not not self.db.fetchone('select * from insurance_rate where insurance_id=%s',[insurance_id]); 
 
