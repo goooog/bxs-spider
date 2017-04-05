@@ -44,4 +44,4 @@ def str2int(value):
 		return match.group(1)
 	else:
 		logging.warning('Digits not found:%s',value)
-		return ''
+		return None

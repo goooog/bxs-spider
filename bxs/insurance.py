@@ -52,6 +52,7 @@ class InsuranceCrawler:
 		main_ins=ins[bao_type]
 		baof=main_ins.get('baof')
 		baof_total=ins.get('fBaofTotal')
+		logging.info('id=%s,baof=%s,fBaofTotal=%s',self.insurance_id,baof,baof_total)
 		if math.floor(float(baof))==math.floor(float(baof_total)):
 			return True
 		else:

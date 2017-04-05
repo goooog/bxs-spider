@@ -134,7 +134,8 @@ class InsuranceDao:
 		sql='insert into '+table+'(insurance_id, insurance_name, sex, age, years, baoe, baof,baof_total, lingqu, duration, lingqu_type, smoke, social, plan,baoe1,baof1,baoe2,baof2,baoe3,baof3)values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
 		args=[]
 		args.append(ins_id)
-		args.append(main_ins.get('name'))
+		name=main_ins.get('name')
+		args.append(name if name else '')
 		args.append(common_data.get('sex'))
 		args.append(common_data.get('age'))
 		args.append(main_ins.get('years'))
@@ -157,6 +158,7 @@ class InsuranceDao:
 				baof=ins[ins_names[i]].get('baof')
 			args.append(baoe)
 			args.append(baof)
+		logging.info('insert:%s',args)
 		
 		return self.db.insert(sql,args)
 		
@@ -164,7 +166,7 @@ class InsuranceDao:
 	def __get_checked_ins(self,ins_data,bao_type):
 		names=[]
 		for (key,ins) in ins_data.items():
-			if key!=bao_type and isinstance(ins,dict) and ins.get('isChecked') and ins.has_key('baoe'):
+			if key!=bao_type and isinstance(ins,dict) and ins.get('isChecked') and ins.has_key('baoe') and ins.get('baoe')!='-':
 				names.append(key)
 		names.sort()
 		return names
