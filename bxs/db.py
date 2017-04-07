@@ -32,7 +32,7 @@ class DBUtil:
 			cur.execute(sql,args)
 			
 			if is_insert:
-				ret=conn.insert_id()
+				ret=cur.lastrowid
 			conn.commit()
 		except BaseException,e:
 			print 'exception:',e
