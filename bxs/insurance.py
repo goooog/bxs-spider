@@ -268,8 +268,8 @@ class InsuranceCrawler:
 								self.__set_baoebaof(ains)
 
 	def __set_baoebaof(self,ins):
-		if ins.has_key('baoe'):
-			baoe=str(ins['baoe'])
+		if ins.has_key('baoe') or ins.has_key('baoe_min'):
+			baoe=str(ins.get('baoe'))
 			if baoe!='-':
 				ins['baoe']=200000
 				if ins.has_key('baofToBaoe'):

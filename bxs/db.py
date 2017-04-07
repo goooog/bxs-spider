@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import logging
+import json
 from loggings import *
 from settings import DB_CONFIG
 from tools import str2int
@@ -102,6 +103,7 @@ class ProfitDao:
 		i=1
 		for v in profit_value:
 			value=[pid,insurance_id,name,v,wanneng_grade,profit_grade,i]	
+			logging.info('profit:%s',json.dumps(value,ensure_ascii=False))
 			self.db.insert(sql,value)
 			i=i+1
 			
@@ -158,7 +160,7 @@ class InsuranceDao:
 				baof=ins[ins_names[i]].get('baof')
 			args.append(baoe)
 			args.append(baof)
-		logging.info('insert:%s',args)
+		logging.info('insurance:%s',json.dumps(args,ensure_ascii=False))
 		
 		return self.db.insert(sql,args)
 		
